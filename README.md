@@ -1,6 +1,14 @@
-# 琶洲外卖转盘
+# 广州今天吃什么
 
-广州海珠区琶洲“今天吃什么”移动网页。纯前端运行，不提交订单或付款；门店营业与配送范围以外卖平台实时信息为准。
+面向广州全市的移动端“今天吃什么”转盘。纯前端运行，不提交订单或付款；门店营业、外卖与配送范围以美团实时信息为准。
+
+## 地区与商家来源
+
+- 覆盖广州 11 个行政区：越秀、荔湾、海珠、天河、白云、黄埔、番禺、花都、南沙、从化、增城。
+- “定位找店”只在用户主动点击并授权后读取当前位置，不保存经纬度。
+- “附近商家”通过 OpenStreetMap Overpass 公共接口查询约 3.5 公里内带名称的餐厅、快餐、咖啡店和美食广场，取最近 50 家进入转盘。
+- 公共地图数据可能不完整或暂时限流；查询失败时自动切换到“美团实时搜索”，由美团显示当前位置可用商家。
+- 六个原有热门商圈精选列表继续保留，作为公开地图或定位不可用时的手动候选。
 
 ## 美团 App 唤起实现
 
@@ -11,14 +19,10 @@
 - 微信内置浏览器：提示改用 Safari 或系统浏览器，同时复制店名
 - 未安装或浏览器阻止：停留当前页并提示，店名已复制
 
-不再使用 https://meituan.com 首页作为 App 跳转，因为普通 HTTPS 首页不是搜索深链，且移动网页本身可能报客户端错误。
+不使用 https://meituan.com 首页作为 App 跳转，因为普通 HTTPS 首页不是搜索深链，且移动网页本身可能报客户端错误。
 
-## 调研证据
+## 数据与能力边界
 
-- 955xiaoSu/Eat-what 的 index.html 使用 imeituan://www.meituan.com/search?q=周边美食推荐
-- 1426098028/Promote 的“打开美团.html”使用 imeituan:// 直接唤起
-- KusStar/krude 的 SearchHelper.kt 使用 imeituan://www.meituan.com/search?q=queryplaceholder，并标注 Android 包名 com.sankuai.meituan
-- tanhan8023-ux/shesheji 的 takeout_launch_service_web.dart 同时使用 Android intent、美团外卖 meituanwaimai://search?keyword= 和美团主 App Scheme
-- 美团官方 AASA 文件 https://www.meituan.com/.well-known/apple-app-site-association 只关联指定路径；普通首页和 /search 不在其路径列表中，不能依赖任意 HTTPS 地址作为 iOS Universal Link
+附近商家不是美团全量商家库，也不代表实时营业或可配送。页面不抓取美团私有接口，不绕过登录、签名、验证码或风控；选中结果会交给美团搜索核实。
 
 这些 Scheme 属于客户端深链能力，可能随 App 版本和浏览器策略变化；网页保留复制店名兜底。
