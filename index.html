@@ -74,30 +74,31 @@ function render(){const box=$('#shopList');box.innerHTML='';shops.forEach((s,i)=
 function notify(text){const t=$('#toast');t.textContent=text;t.classList.add('on');clearTimeout(notify.timer);notify.timer=setTimeout(()=>t.classList.remove('on'),1300)}
 function tick(){const p=$('#pointer');p.classList.remove('tick');void p.offsetWidth;p.classList.add('tick');if(navigator.vibrate)navigator.vibrate(8)}
 function confetti(){const rect=$('#hub').getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2;for(let i=0;i<58;i++){const e=document.createElement('i');e.className='confetti';e.style.left=x+'px';e.style.top=y+'px';e.style.background=palette[i%palette.length];const a=Math.random()*Math.PI*2,d=90+Math.random()*230;e.style.setProperty('--x',Math.cos(a)*d+'px');e.style.setProperty('--y',Math.sin(a)*d+80+'px');e.style.setProperty('--r',(Math.random()*900-450)+'deg');e.style.animationDelay=Math.random()*.12+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),1700)}}
-function showResult(s){selected=s;const r=$('#result');r.innerHTML=`<small>今天就吃</small><strong>${s.icon||'🍽️'} ${esc(s.name)}</strong>`;r.classList.remove('pop');void r.offsetWidth;r.classList.add('pop');$('#quick').classList.add('show');confetti();notify('选好了！')}
-function spin(){if(spinning||shops.length<2)return;spinning=true;selected=null;$('#quick').classList.remove('show');$('#wheelWrap').classList.add('spinning');$('#spin').textContent='命运转动中…';const n=shops.length,idx=Math.floor(Math.random()*n),arc=Math.PI*2/n,target=-Math.PI/2-(idx+.5)*arc,start=rotation;let end=target+Math.PI*2*(6+Math.floor(Math.random()*3));while(end<start+Math.PI*10)end+=Math.PI*2;const t0=performance.now(),dur=3800;function frame(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,4);rotation=start+(end-start)*e;draw();const sector=Math.floor((((-rotation-Math.PI/2)%(Math.PI*2))+Math.PI*2)/arc);if(sector!==lastSector&&p<.92){lastSector=sector;tick()}if(p<1)requestAnimationFrame(frame);else{rotation=((rotation%(Math.PI*2))+Math.PI*2)%(Math.PI*2);spinning=false;$('#wheelWrap').classList.remove('spinning');$('#spin').textContent='再转一次 🎲';showResult(shops[idx]);if(navigator.vibrate)navigator.vibrate([40,35,90])}}requestAnimationFrame(frame)}
+function showResult(s){selected=s;const r=$('#result');r.innerHTML=`<small>今天就吃</small><strong>${s.icon||'🍽️'} ${esc(s.name)}</strong>`;r.classList.remove('pop');void r.offsetWidth;r.classList.add('pop');$('#quick').classList.add('show');confetti();notify('选好了，正在打开美团…');clearTimeout(autoLaunchTimer);autoLaunchTimer=setTimeout(()=>openMeituan(true),180)}
+function spin(){if(spinning||shops.length<2)return;spinning=true;selected=null;$('#quick').classList.remove('show');$('#wheelWrap').classList.add('spinning');$('#spin').textContent='命运转动中…';const n=shops.length,idx=Math.floor(Math.random()*n),arc=Math.PI*2/n,target=-Math.PI/2-(idx+.5)*arc,start=rotation;let end=target+Math.PI*2*(6+Math.floor(Math.random()*3));while(end<start+Math.PI*10)end+=Math.PI*2;const t0=performance.now(),dur=2600;function frame(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,4);rotation=start+(end-start)*e;draw();const sector=Math.floor((((-rotation-Math.PI/2)%(Math.PI*2))+Math.PI*2)/arc);if(sector!==lastSector&&p<.92){lastSector=sector;tick()}if(p<1)requestAnimationFrame(frame);else{rotation=((rotation%(Math.PI*2))+Math.PI*2)%(Math.PI*2);spinning=false;$('#wheelWrap').classList.remove('spinning');$('#spin').textContent='再转一次 🎲';showResult(shops[idx]);if(navigator.vibrate)navigator.vibrate([40,35,90])}}requestAnimationFrame(frame)}
 $('#spin').onclick=spin;$('#hub').onclick=spin;
 function copySelected(silent=false){if(!selected)return false;try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(selected.name).catch(()=>{})}else{const box=document.createElement('textarea');box.value=selected.name;box.style.position='fixed';box.style.opacity='0';document.body.appendChild(box);box.select();document.execCommand('copy');box.remove()}if(!silent)notify('店名已复制');return true}catch(e){if(!silent)prompt('复制店名',selected.name);return false}}
-let launchTimer=null;
+let launchTimer=null,autoLaunchTimer=null;
 function showLaunchGuide(){copySelected(true);$('#launchGuide').classList.add('show')}
-function openMeituan(){
+function openMeituan(auto=false){
  if(!selected)return notify('请先转一次');
- copySelected(true);
  const ua=navigator.userAgent||'';
  const isWechat=/MicroMessenger|wxwork/i.test(ua);
  const isAndroid=/Android/i.test(ua);
  const isIOS=/iPhone|iPad|iPod/i.test(ua);
- if(isWechat)return showLaunchGuide();
- if(!isAndroid&&!isIOS)return notify('请用手机打开，店名已复制');
+ if(isWechat){copySelected(true);notify('微信限制唤起，请用浏览器打开');return showLaunchGuide()}
+ if(!isAndroid&&!isIOS){copySelected(true);return notify('请用手机打开，店名已复制')}
+ if(!auto)copySelected(true);
  const q=encodeURIComponent(selected.name);
  const scheme='imeituan://www.meituan.com/search?q='+q;
- const target=isAndroid?'intent://www.meituan.com/search?q='+q+'#Intent;scheme=imeituan;package=com.sankuai.meituan;end':scheme;
+ const fallback=encodeURIComponent(window.location.href);
+ const target=isAndroid?'intent://www.meituan.com/search?q='+q+'#Intent;scheme=imeituan;package=com.sankuai.meituan;S.browser_fallback_url='+fallback+';end':scheme;
  clearTimeout(launchTimer);
  window.location.href=target;
- launchTimer=setTimeout(()=>{if(document.visibilityState==='visible')notify('未唤起？店名已复制，请确认已安装美团')},1800);
+ launchTimer=setTimeout(()=>{if(document.visibilityState==='visible'){if(auto)copySelected(true);notify('未唤起？请点按钮重试或复制店名')}},1800);
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&launchTimer){clearTimeout(launchTimer);launchTimer=null}});
-$('#openMeituan').onclick=openMeituan;
+$('#openMeituan').onclick=()=>openMeituan(false);
 $('#copy').onclick=()=>copySelected(false);
 $('#exclude').onclick=()=>{if(!selected)return;if(shops.length<=2)return notify('至少留两家');shops=shops.filter(s=>s!==selected);selected=null;save();render();draw();$('#quick').classList.remove('show');$('#result').innerHTML='<small>已暂时排除</small><strong>再转一次吧</strong>';notify('这次不吃它')};
 $('#closeGuide').onclick=()=>$('#launchGuide').classList.remove('show');$('#launchGuide').onclick=e=>{if(e.target===$('#launchGuide'))$('#launchGuide').classList.remove('show')};
